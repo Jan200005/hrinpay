@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inpay HR Assistant</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #f4f4f6;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 16px;
+    }
+
+    #app {
+      display: flex; flex-direction: column;
+      width: 100%; max-width: 700px; height: 90vh; max-height: 720px;
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #e2e2e8;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+
+    #topbar {
+      padding: 13px 18px;
+      border-bottom: 1px solid #e2e2e8;
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0; background: #ffffff;
+    }
+    .logo {
+      width: 36px; height: 36px; border-radius: 9px;
+      background: #1a1a2e;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .logo svg { width: 18px; height: 18px; }
+    .bar-name { font-size: 14px; font-weight: 500; color: #111; }
+    .bar-sub { font-size: 11px; color: #888; }
+    .classify-badge {
+      margin-left: auto; display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 500; color: #185FA5;
+      background: #E6F1FB; padding: 4px 10px; border-radius: 20px;
+    }
+    .classify-badge svg { width: 11px; height: 11px; }
+
+    #messages {
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+      background: #f8f8fb; scroll-behavior: smooth;
+    }
+
+    .msg { display: flex; flex-direction: column; max-width: 84%; animation: fadeUp 0.18s ease; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+    .msg.user { align-self: flex-end; align-items: flex-end; }
+    .msg.bot  { align-self: flex-start; align-items: flex-start; }
+
+    .bubble { padding: 10px 14px; font-size: 13.5px; line-height: 1.65; border-radius: 16px; }
+    .msg.user .bubble { background: #1a1a2e; color: #e8e8f0; border-radius: 16px 16px 4px 16px; }
+    .msg.bot  .bubble { background: #fff; color: #111; border: 1px solid #e2e2e8; border-radius: 4px 16px 16px 16px; }
+    .msg-time { font-size: 10px; color: #aaa; margin-top: 3px; padding: 0 4px; }
+
+    .classify-card {
+      align-self: flex-start; max-width: 88%;
+      background: #fff; border: 1px solid #e2e2e8;
+      border-radius: 4px 16px 16px 16px;
+      overflow: hidden; animation: fadeUp 0.18s ease;
+    }
+    .classify-header {
+      padding: 8px 13px; font-size: 11px; font-weight: 500;
+      display: flex; align-items: center; gap: 6px;
+      border-bottom: 1px solid #e2e2e8;
+      color: #555; background: #f8f8fb;
+    }
+    .classify-header svg { width: 12px; height: 12px; flex-shrink: 0; }
+    .classify-body { padding: 10px 13px; display: flex; flex-direction: column; gap: 5px; }
+    .classify-row { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; }
+    .classify-value { color: #111; font-weight: 500; flex: 1; }
+    .tag { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; margin-top: 1px; }
+    .tag-high   { background: #FCEBEB; color: #A32D2D; }
+    .tag-medium { background: #FAEEDA; color: #633806; }
+    .tag-low    { background: #EAF3DE; color: #27500A; }
+    .classify-note { font-size: 11.5px; color: #666; padding: 0 0 6px; line-height: 1.5; }
+    .classify-reply { font-size: 13.5px; color: #111; padding: 10px 13px; border-top: 1px solid #e2e2e8; line-height: 1.65; }
+
+    .typing-dots span {
+      display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+      background: #aaa; margin-right: 3px; animation: dot 1.2s infinite;
+    }
+    .typing-dots span:nth-child(2){animation-delay:0.2s}
+    .typing-dots span:nth-child(3){animation-delay:0.4s;margin-right:0}
+    @keyframes dot{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
+
+    #chips {
+      padding: 9px 14px; display: flex; gap: 6px; flex-wrap: wrap;
+      border-top: 1px solid #e2e2e8; background: #fff; flex-shrink: 0;
+    }
+    .chip {
+      font-size: 11.5px; padding: 4px 11px; border-radius: 20px;
+      border: 1px solid #ddd; background: #f8f8fb; color: #555;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+    .chip:hover { background: #E6F1FB; color: #185FA5; border-color: #85B7EB; }
+
+    #input-row {
+      display: flex; gap: 8px; padding: 11px 14px;
+      border-top: 1px solid #e2e2e8; background: #fff;
+      align-items: flex-end; flex-shrink: 0;
+    }
+    #user-input {
+      flex: 1; border: 1px solid #ddd; border-radius: 10px;
+      padding: 9px 13px; font-size: 13.5px; font-family: inherit;
+      background: #f8f8fb; color: #111;
+      resize: none; min-height: 38px; max-height: 110px;
+      line-height: 1.5; outline: none; transition: border-color 0.15s;
+    }
+    #user-input:focus { border-color: #378ADD; }
+    #user-input::placeholder { color: #bbb; }
+
+    #send-btn {
+      width: 38px; height: 38px; border-radius: 50%; border: none;
+      background: #1a1a2e; color: white; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background 0.15s, transform 0.1s;
+    }
+    #send-btn:hover { background: #2d2d4e; }
+    #send-btn:active { transform: scale(0.94); }
+    #send-btn:disabled { background: #ccc; cursor: not-allowed; }
+    #send-btn svg { width: 14px; height: 14px; }
+
+
+    #footer {
+      text-align: center; font-size: 10px; color: #bbb;
+      padding: 5px; border-top: 1px solid #e2e2e8;
+      background: #fff; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M4 12h16M12 4l8 8-8 8" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="bar-name">Inpay HR Assistant</div>
+      <div class="bar-sub">Employee policy guide · internal use only</div>
+    </div>
+    <div class="classify-badge">
+      <svg viewBox="0 0 12 12" fill="none">
+        <rect x="1" y="1" width="4" height="4" rx="1" fill="#378ADD"/>
+        <rect x="7" y="1" width="4" height="4" rx="1" fill="#378ADD" opacity="0.6"/>
+        <rect x="1" y="7" width="4" height="4" rx="1" fill="#378ADD" opacity="0.6"/>
+        <rect x="7" y="7" width="4" height="4" rx="1" fill="#378ADD" opacity="0.3"/>
+      </svg>
+      PII classifier active
+    </div>
+  </div>
+
+
+  <div id="messages">
+    <div class="msg bot">
+      <div class="bubble">Hi 👋 I'm Inpay's HR assistant. Ask me anything about our policies — leave, remote work, benefits, expenses, conduct, and more.<br><br>Note: I'll automatically classify any personal information you share to keep your data handled responsibly.</div>
+      <div class="msg-time">now</div>
+    </div>
+  </div>
+
+  <div id="chips">
+    <button class="chip" onclick="askChip(this)">Annual leave</button>
+    <button class="chip" onclick="askChip(this)">Remote work</button>
+    <button class="chip" onclick="askChip(this)">Parental leave</button>
+    <button class="chip" onclick="askChip(this)">Expenses</button>
+    <button class="chip" onclick="askChip(this)">My data rights</button>
+    <button class="chip" onclick="askChip(this)">Learning budget</button>
+    <button class="chip" onclick="askChip(this)">Disciplinary process</button>
+    <button class="chip" onclick="askChip(this)">Mental health support</button>
+  </div>
+
+  <div id="input-row">
+    <textarea id="user-input" placeholder="Ask about any Inpay HR policy..." rows="1"
+      onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button id="send-btn" onclick="sendMessage()">
+      <svg viewBox="0 0 20 20" fill="none">
+        <path d="M3 10L17 10M17 10L11 4M17 10L11 16" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+  <div id="footer">Inpay · HR Knowledge Assistant · Powered by Claude · Confidential</div>
+</div>
+
+<script>
+
+  const PII_CLASSIFIERS = [
+    { pattern: /\b[A-ZÆØÅ][a-zæøå]+ [A-ZÆØÅ][a-zæøå]+\b/, label: 'Full name', risk: 'high', note: 'Names are personal identifiers under GDPR Art. 4. Not stored or forwarded.' },
+    { pattern: /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/, label: 'Email address', risk: 'high', note: 'Email is personal contact data. For HR matters email hr@inpay.com directly.' },
+    { pattern: /\b(\+?\d[\s\-]?){7,13}\d\b/, label: 'Phone number', risk: 'high', note: 'Phone numbers are personal contact data under GDPR. Not logged here.' },
+    { pattern: /\b\d{8,}\b/, label: 'ID or account number', risk: 'high', note: 'Numeric IDs may identify you. Submit sensitive requests via the HR portal.' },
+    { pattern: /\b(passport|national id|cpr|bsn|ssn|nino|social security)\b/i, label: 'Identity document reference', risk: 'high', note: 'Government-issued ID references are sensitive. Contact hr@inpay.com.' },
+    { pattern: /\b(iban|account number|sort code|swift|bic|bank details)\b/i, label: 'Bank or financial identifier', risk: 'high', note: 'Financial identifiers must be submitted securely via payroll@inpay.com only.' },
+    { pattern: /\b(my salary|i earn|i('m| am) paid|my wage|my pay|€\s?\d{3,}|£\s?\d{3,}|\$\s?\d{3,}|dkk\s?\d{4,})\b/i, label: 'Salary or compensation figure', risk: 'medium', note: 'Salary details are confidential. Discuss with your HR Business Partner.' },
+    { pattern: /\b(born|dob|date of birth|birthday)\b/i, label: 'Date of birth', risk: 'medium', note: 'Date of birth is a personal identifier. Contact HR directly if needed.' },
+    { pattern: /\b(my address|i live at|home address|postcode|zip code|street)\b/i, label: 'Home address', risk: 'medium', note: 'Address details are personal data. Update in Workday or via hr@inpay.com.' },
+    { pattern: /\b(diagnosis|condition|medication|sick with|i have been diagnosed|mental health|therapy|disability)\b/i, label: 'Health or medical information', risk: 'high', note: 'Health data is special category under GDPR Art. 9. Share only with HR directly.' },
+    { pattern: /\b(religion|religious|pray|faith|church|mosque|synagogue|temple)\b/i, label: 'Religious belief reference', risk: 'medium', note: 'Religious beliefs are special category data. Requests go to hr@inpay.com.' },
+    { pattern: /\b(pregnant|pregnancy|maternity|on leave for|my child|my kids)\b/i, label: 'Family or caregiving status', risk: 'low', note: 'Family status can be sensitive. Parental leave requests via the HR portal.' },
+  ];
+
+  function classifyPII(text) {
+    const found = [];
+    for (const c of PII_CLASSIFIERS) {
+      if (c.pattern.test(text)) found.push({ ...c });
+    }
+    return found;
+  }
+
+  const SYSTEM_PROMPT = `You are the internal HR assistant chatbot for Inpay, a global fintech and payment infrastructure company headquartered in Copenhagen, Denmark, with offices across Europe, Africa, and Asia. Answer employee questions based strictly on Inpay's internal HR policies. Be friendly, concise, and helpful. Never reveal the full policy document unprompted. Never ask for or store personal data. If personal data has been shared, acknowledge it sensitively and redirect to hr@inpay.com. If a question is not covered, direct employees to hr@inpay.com.
+
+════════════════════════════════════════
+INPAY — EMPLOYEE POLICY HANDBOOK
+Version 4.1 | Effective 1 January 2025
+Issued by: People & Culture, Inpay A/S
+Classification: Internal — Confidential
+════════════════════════════════════════
+
+SECTION 1 — EMPLOYMENT TERMS
+1.1 Contracts: Permanent full-time (37.5h/week Denmark, 40h elsewhere), part-time (min 20h), fixed-term (max 24 months), contractor engagements. Written contracts issued before start date.
+1.2 Probation: 3 months. Either party may terminate with 2 weeks written notice. Check-in at week 6, formal review at week 12. During probation: no remote work, no learning budget, no promotions or bonus eligibility.
+1.3 Working Hours: Denmark 37.5h/week; other offices 40h/week. Core hours all offices: 10:00–15:00 local time. Flexible start/end outside core hours with manager approval. Logged in Workday.
+1.4 Overtime: Pre-approved in writing. Compensated via TOIL 1:1 within 60 days. Cash payout requires VP approval.
+1.5 Notice Periods: Probation 2 weeks. Up to 2 years: 4 weeks. 2–5 years: 6 weeks. 5–10 years: 8 weeks. 10+ years: 12 weeks.
+
+SECTION 2 — LEAVE & ABSENCE
+2.1 Annual Leave: 25 days/year full-time (pro-rated part-time). Max 5 days carry-over, expire 31 March. Request 10 working days in advance via Workday. Manager responds within 5 days. National public holidays observed per country.
+2.2 Sick Leave: 10 days/year full pay. Self-cert 1–3 days. Medical certificate from day 4. After 10 days: income protection at 75% base salary up to 26 weeks. Notify manager and HR before 09:30 on first day.
+2.3 Parental Leave: Primary caregiver 16 weeks full pay + 10 weeks 50%. 8 weeks advance notice. Secondary: 4 weeks full pay within 3 months of birth/adoption. Right to return to same or equivalent role. Danish employees retain Barselloven statutory rights.
+2.4 Bereavement: 5 days immediate family, 2 days extended family.
+2.5 Other Leave: Jury duty full pay up to 10 days. Study/exam leave 3 days/year. Volunteer leave 2 days/year. Emergency dependant care 3 days/year unpaid. Mental health days: 2 paid/year, no note required.
+2.6 Unpaid Leave: Up to 4 weeks/year with manager and HR Business Partner approval. 4 weeks advance notice required.
+
+SECTION 3 — REMOTE WORK
+3.1 Hybrid: Min 3 in-office days/week. Up to 2 remote days/week post-probation. Log in Teams and Workday each Monday before 10:00.
+3.2 International Remote: More than 10 consecutive days outside country of employment requires HR and Legal approval. Submit 3 weeks in advance.
+3.3 Home Office Allowance: €300 one-time for permanent employees post-probation. Eligible: desk, chair, monitor, keyboard, mouse, lighting. Via Workday expense portal.
+3.4 Equipment: Laptop and peripherals issued. Must be returned on last day. Requests to it@inpay.com.
+
+SECTION 4 — EXPENSES & TRAVEL
+4.1 General: Submit within 30 days via Workday. Receipts required above €25. Reimbursed on 15th monthly.
+4.2 Meals: Business travel €40/person/day. Client entertainment €80/person/dinner with manager approval.
+4.3 Travel: Book via TravelPerk. Economy under 5h. Premium economy 5h+ or with VP approval. Train preferred under 3h. Hotel cap €180/night Western Europe, €120/night elsewhere. Per diem €40/day.
+4.4 Personal Vehicle: €0.28/km. Log in Workday.
+
+SECTION 5 — COMPENSATION & BENEFITS
+5.1 Payroll: Monthly on last working day. Payslips via Workday. Contact payroll@inpay.com for issues.
+5.2 Salary Review: Annual Q4. Effective 1 January. Not eligible if on PIP or active disciplinary.
+5.3 Bonus: Discretionary. Target: 10% individual contributors, 15% team leads, up to 20% managers. Paid February. Must be employed on payment date.
+5.4 Pension: Inpay 5% match. Employee min 3%. Starts after 3 months. Danish employees also covered under ATP.
+5.5 Health Insurance: From day one. GP, specialist, diagnostics, inpatient/outpatient, mental health (20 sessions/year), dental (€500/year). Subsidised cover for dependants.
+5.6 Other Benefits: Gym/wellness €50/month. Cycle-to-work up to €2,000 salary sacrifice. EAP 24/7: 0800-HR-HELP. Public transport subsidy €75/month. Staff referral bonus €1,500. Subsidised lunch at Copenhagen HQ.
+
+SECTION 6 — PERFORMANCE & DEVELOPMENT
+6.1 Reviews: June and December. 5-point scale: Exceptional, Exceeds, Meets, Developing, Unsatisfactory.
+6.2 Goals: 3–5 SMART goals set in Workday each January with manager.
+6.3 Learning Budget: €1,000/year. Courses, certifications, conferences, books. Requires manager approval. LinkedIn Learning free for all.
+6.4 Promotions: Q4 annually. Requires 12+ months in role, Exceeds Expectations or above, manager nomination.
+6.5 PIP: 60–90 days with clear targets and weekly check-ins. Failure may result in dismissal. Not eligible for increases, bonuses, or promotions during PIP.
+
+SECTION 7 — CODE OF CONDUCT
+7.1 Standards: Integrity, respect, professionalism. Inpay values: Integrity, Ambition, Collaboration, Customer Focus.
+7.2 Anti-Harassment: Zero tolerance for harassment or discrimination on any grounds. Report to manager, HR, or anonymously via ethics@inpay.com.
+7.3 Conflicts of Interest: Disclose in writing to manager and HR. Includes financial interests in competitors, personal relationships with direct reports, outside employment.
+7.4 Social Media: No confidential or defamatory content. Media enquiries to communications@inpay.com.
+7.5 Gifts: No gifts over €50 without approval. Log gifts over €25. No cash gifts.
+
+SECTION 8 — DISCIPLINARY & GRIEVANCE
+8.1 Stages: Informal → Verbal warning (6 months) → Written warning (12 months) → Final written warning (18 months) → Dismissal. Right to be accompanied. Appeal within 10 working days to hr@inpay.com.
+8.2 Gross Misconduct: Immediate dismissal may apply for theft, assault, serious harassment, confidentiality breach, falsification, serious IT breach. Triggers suspension on full pay pending investigation.
+8.3 Grievance: Informal with manager first. If unresolved in 5 days, formal grievance to HR. Hearing within 10 working days. Appeal within 10 working days.
+
+SECTION 9 — DATA PROTECTION & PRIVACY (GDPR)
+9.1 Data collected: Identity, contact, employment, payroll, health (strict necessity), IT usage (security only).
+9.2 Legal basis: Contract, legal compliance, legitimate interests, consent.
+9.3 Retention: Employment records 7 years. Payroll 7 years. Candidate data 6 months. Health records 10 years. IT logs 12 months.
+9.4 Employee Rights: Access, rectification, erasure, restriction, portability, objection. Submit to privacy@inpay.com. Complaints to Datatilsynet or local DPA.
+9.5 Third parties: All processors bound by GDPR DPAs. No data sold or shared commercially.
+
+SECTION 10 — IT & SECURITY
+10.1 Acceptable Use: Business use. Limited personal use permitted. No expectation of privacy on company devices.
+10.2 Passwords: Min 12 characters. Changed every 90 days. MFA mandatory. No credential sharing.
+10.3 Data Security: No company data on personal devices. Sensitive docs in SharePoint/OneDrive. No USB without IT approval.
+10.4 Incidents: Report to it@inpay.com immediately. GDPR 72-hour breach notification applies.
+10.5 Software: IT-approved only. No personal AI tools for company data.
+
+SECTION 11 — HEALTH, SAFETY & WELLBEING
+11.1 Workplace Safety: Comply with local H&S law. Report hazards to facilities@inpay.com.
+11.2 DSE: Risk assessment within first month. Occupational health available via HR.
+11.3 Mental Health: EAP 24/7. 2 paid mental health days/year. Mental health first aiders in each office.
+11.4 Substances: No alcohol or substances at work. EAP available for dependency support.
+
+SECTION 12 — ONBOARDING & OFFBOARDING
+12.1 Onboarding: Equipment ready pre-start. Day 1: welcome, paperwork, system access. Weeks 1–2: mandatory compliance training, buddy programme, 30-60-90 day plan. Month 1: HR Business Partner check-in.
+12.2 Offboarding: Return equipment on last day. Submit outstanding expenses. IT access revoked at 17:00 on last day. Final payslip within 14 days.
+
+════════════════════════════════════════
+END OF INPAY EMPLOYEE POLICY HANDBOOK
+Questions: hr@inpay.com | Last reviewed: January 2025
+════════════════════════════════════════
+
+If personal data is detected in the message, acknowledge it sensitively, do not repeat it back, and redirect appropriately. Still answer their policy question.`;
+
+  let history = [];
+  let loading = false;
+
+  function now() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+  }
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+  function askChip(btn) { sendMessage(btn.textContent); }
+
+  function addMsg(role, text) {
+    const msgs = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    div.innerHTML = `<div class="bubble">${text.replace(/\n/g,'<br>')}</div><div class="msg-time">${now()}</div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function addClassifyCard(detections, reply) {
+    const msgs = document.getElementById('messages');
+    const riskLabel = r => ({ high:'High sensitivity', medium:'Medium sensitivity', low:'Low sensitivity' }[r] || r);
+    const rows = detections.map(d => `
+      <div class="classify-row">
+        <span class="classify-value">${d.label}</span>
+        <span class="tag tag-${d.risk}">${riskLabel(d.risk)}</span>
+      </div>
+      <div class="classify-note">${d.note}</div>
+    `).join('<div style="height:3px"></div>');
+
+    const card = document.createElement('div');
+    card.className = 'classify-card';
+    card.innerHTML = `
+      <div class="classify-header">
+        <svg viewBox="0 0 12 12" fill="none">
+          <rect x="1" y="1" width="4" height="4" rx="1" fill="#378ADD"/>
+          <rect x="7" y="1" width="4" height="4" rx="1" fill="#378ADD" opacity="0.6"/>
+          <rect x="1" y="7" width="4" height="4" rx="1" fill="#378ADD" opacity="0.6"/>
+          <rect x="7" y="7" width="4" height="4" rx="1" fill="#378ADD" opacity="0.3"/>
+        </svg>
+        Personal data detected &amp; classified
+      </div>
+      <div class="classify-body">${rows}</div>
+      <div class="classify-reply">${reply.replace(/\n/g,'<br>')}</div>
+    `;
+    msgs.appendChild(card);
+    const t = document.createElement('div');
+    t.className = 'msg-time'; t.style.padding = '0 4px'; t.textContent = now();
+    msgs.appendChild(t);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function showTyping() {
+    const msgs = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'msg bot'; div.id = 'typing';
+    div.innerHTML = `<div class="bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+  function removeTyping() {
+    const t = document.getElementById('typing');
+    if (t) t.remove();
+  }
+
+  async function sendMessage(override) {
+    const input = document.getElementById('user-input');
+    const text = override || input.value.trim();
+    if (!text || loading) return;
+    input.value = ''; autoResize(input);
+
+    loading = true;
+    document.getElementById('send-btn').disabled = true;
+    addMsg('user', text);
+    history.push({ role: 'user', content: text });
+    showTyping();
+
+    const detections = classifyPII(text);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: SYSTEM_PROMPT,
+          messages: history
+        })
+      });
+      const data = await res.json();
+      const reply = data.content?.[0]?.text || 'Sorry, I could not get a response.';
+      history.push({ role: 'assistant', content: reply });
+      removeTyping();
+      if (detections.length > 0) {
+        addClassifyCard(detections, reply);
+      } else {
+        addMsg('bot', reply);
+      }
+    } catch(e) {
+      removeTyping();
+      addMsg('bot', 'Something went wrong. Please try again.');
+    }
+
+    loading = false;
+    document.getElementById('send-btn').disabled = false;
+  }
+</script>
+</body>
+</html>
