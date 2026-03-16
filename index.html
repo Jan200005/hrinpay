@@ -410,7 +410,12 @@ If personal data is detected in the message, acknowledge it sensitively, do not 
         })
       });
       const data = await res.json();
-      const reply = data.content?.[0]?.text || 'Sorry, I could not get a response.';
+      let reply =
+        (!res.ok && (data?.detail || data?.error))
+          ? (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail ?? data.error))
+          : (data?.content?.[0]?.text || '');
+
+      if (!reply) reply = 'Sorry, I could not get a response.';
       history.push({ role: 'assistant', content: reply });
       removeTyping();
       if (detections.length > 0) {
@@ -429,3 +434,4 @@ If personal data is detected in the message, acknowledge it sensitively, do not 
 </script>
 </body>
 </html>
+
