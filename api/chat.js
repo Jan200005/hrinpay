@@ -7,6 +7,13 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
  
   try {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(500).json({
+        error: 'Server misconfigured',
+        detail: 'Missing ANTHROPIC_API_KEY environment variable.',
+      });
+    }
+
     // Parse body — Vercel may or may not auto-parse depending on config
     let body = req.body;
     if (typeof body === 'string') {
@@ -28,7 +35,24 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify(body),
     });
  
-    const data = await response.json();
+    const requestId = response.headers.get('request-id');
+    const rawText = await response.text();
+    let data;
+    try {
+      data = rawText ? JSON.parse(rawText) : null;
+    } catch {
+      data = null;
+    }
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: 'Anthropic API error',
+        status: response.status,
+        request_id: requestId,
+        detail: data ?? rawText,
+      });
+    }
+
     res.status(response.status).json(data);
   } catch (err) {
     res.status(500).json({ error: 'Proxy error', detail: err.message });
